@@ -1,3 +1,3 @@
 from envs.gazebo_env.py import GazeboEnv
 
-from envs.simpleSingleAgent.py import simpleSingleAgent
+from envs.gazebo_point_simple_camera_location_v0.py import GazeboPointSimpleCameraLocation
