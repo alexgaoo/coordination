@@ -1,2 +1,0 @@
-sudo apt-get install gazebo5
-sudo apt-get install ros-indigo-gazebo5-ros-pkgs

@@ -1,0 +1,7 @@
+/home/alex/Git/Research/coordination/envs/installation/catkin_ws/build/CMakeFiles/clean_test_results.dir
+/home/alex/Git/Research/coordination/envs/installation/catkin_ws/build/CMakeFiles/download_extra_data.dir
+/home/alex/Git/Research/coordination/envs/installation/catkin_ws/build/CMakeFiles/doxygen.dir
+/home/alex/Git/Research/coordination/envs/installation/catkin_ws/build/gtest/CMakeFiles/gtest.dir
+/home/alex/Git/Research/coordination/envs/installation/catkin_ws/build/gtest/CMakeFiles/gtest_main.dir
+/home/alex/Git/Research/coordination/envs/installation/catkin_ws/build/CMakeFiles/run_tests.dir
+/home/alex/Git/Research/coordination/envs/installation/catkin_ws/build/CMakeFiles/tests.dir

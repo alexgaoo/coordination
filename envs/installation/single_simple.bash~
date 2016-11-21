@@ -4,10 +4,10 @@ else
   bash -c 'sed "s,GAZEBO_MODEL_PATH=[^;]*,'GAZEBO_MODEL_PATH=`pwd`/../assets/models'," -i ~/.bashrc'
 fi
 
-if [ -z "$GYM_GAZEBO_WORLD_POINT" ]; then
-  bash -c 'echo "export GYM_GAZEBO_WORLD_POINT="`pwd`/../assets/worlds/point.world >> ~/.bashrc'
+if [ -z "$GYM_GAZEBO_WORLD_MAZE" ]; then
+  bash -c 'echo "export GYM_GAZEBO_WORLD_MAZE="`pwd`/../assets/worlds/maze.world >> ~/.bashrc'
 else
-  bash -c 'sed "s,GYM_GAZEBO_WORLD_POINT=[^;]*,'GYM_GAZEBO_WORLD_MAZE=`pwd`/../assets/worlds/point.world'," -i ~/.bashrc'
+  bash -c 'sed "s,GYM_GAZEBO_WORLD_MAZE=[^;]*,'GYM_GAZEBO_WORLD_MAZE=`pwd`/../assets/worlds/maze.world'," -i ~/.bashrc'
 fi
 
 exec bash
