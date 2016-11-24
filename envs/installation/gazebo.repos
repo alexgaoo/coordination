@@ -1,16 +1,4 @@
 repositories:
-  ardupilot_sitl_gazebo_plugin:
-    type: git
-    url: https://github.com/erlerobot/ardupilot_sitl_gazebo_plugin
-    version: master
-  ar_track_alvar:
-    type: git
-    url: https://github.com/sniekum/ar_track_alvar
-    version: indigo-devel
-  ar_track_alvar_msgs:
-    type: git
-    url: https://github.com/sniekum/ar_track_alvar_msgs
-    version: indigo-devel
   catkin_simple:
     type: git
     url: https://github.com/catkin/catkin_simple.git

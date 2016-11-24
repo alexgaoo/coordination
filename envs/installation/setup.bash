@@ -65,35 +65,9 @@ sudo apt-get install -y git                            \
 			ros-indigo-pcl-ros	       \
                         gawk                           \
                         libtinyxml2-dev
-sudo easy_install numpy
-sudo easy_install --upgrade numpy
 sudo pip install --upgrade matplotlib
-sudo pip2 install pymavlink MAVProxy catkin_pkg --upgrade
 echo "\nDependencies installed\n"
 
-
-#Install Sophus
-cd ../../
-git clone https://github.com/stonier/sophus -b indigo
-cd sophus
-mkdir build
-cd build
-cmake ..
-make
-sudo make install
-echo "## Sophus installed ##\n"
-
-#Install APM/Ardupilot
-cd ../../
-mkdir apm
-cd apm
-git clone https://github.com/erlerobot/ardupilot.git -b gazebo_udp
-git clone https://github.com/tridge/jsbsim.git
-cd jsbsim
-./autogen.sh --enable-libraries
-make -j2
-sudo make install
-echo "## AMP/Ardupilot installed ##"
 
 # Import and build dependencies
 cd ../../catkin_ws/src/
@@ -111,14 +85,4 @@ if [ -z "$GAZEBO_MODEL_PATH" ]; then
   exec bash #reload bashrc
 fi
 
-# Theano and Keras installation and requisites
-cd ../
-sudo pip install h5py
-sudo apt-get install gfortran
-git clone git://github.com/Theano/Theano.git
-cd Theano/
-sudo python setup.py develop
-sudo pip install keras
 
-echo "## Theano and Keras installed ##"
-echo "## Installation finished ##"
