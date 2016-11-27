@@ -13,6 +13,7 @@ from envs import gazebo_env
 from geometry_msgs.msg import Twist
 from std_srvs.srv import Empty
 from gazebo.srv import *
+from gazebo_msgs.srv import GetModelState
 
 #from sensor_msgs.msg import what sensor are we using? 
 
@@ -66,12 +67,15 @@ class GazeboPointSimpleCameraLocation:
             vel_cmd.angular.z = 0.0
 
         data = None
+
+        #Get robot position coordinates
         while data is None:  
             rospy.wait_for_service('/gazebo/get_model_state') 
             try:
                 gms = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-                #need ot test at home not sure if correct
-                pose = gms(pioneer2dx)
+                #need to test at home not sure if correct
+                resp1 = gms("pioneer2dx","")
+                pose = resp1.pose.position
             except rospy.ServiceException, e:
                 print "Service call failed: %s"%e
 
@@ -84,7 +88,9 @@ class GazeboPointSimpleCameraLocation:
         except rospy.ServiceException, e:
             print ("/gazebo/pause_physics service call failed")
 
-        dist = np.linalg.norm(np.abs([3, 4, 5] - state))
+        target = np.array([6, 3, 0])
+
+        dist = np.linalg.norm(np.abs(target - state))
 
         done = False
 
@@ -128,7 +134,8 @@ class GazeboPointSimpleCameraLocation:
             try:
                 gms = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
                 #need ot test at home not sure if correct
-                pose = gms(pioneer2dx)
+                resp1 = gms("pioneer2dx","")
+                pose = resp1.pose.position
             except rospy.ServiceException, e:
                 print "Service call failed: %s"%e
 
