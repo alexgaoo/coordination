@@ -5,28 +5,31 @@ import signal
 import subprocess
 import tensorflow as tf
 import numpy as np
+import sys
 
 from gym import utils, spaces
 from gym.utils import seeding
 from envs import gazebo_env
 from geometry_msgs.msg import Twist
 from std_srvs.srv import Empty
+from gazebo.srv import *
 
-from sensor_msgs.msg import #what sensor are we using? 
+#from sensor_msgs.msg import what sensor are we using? 
 
 class GazeboPointSimpleCameraLocation:
 
 	def __init__(self):
 		# Launch the simulation with the given launchfile name
-		gazebo_env.GazeboEnv.__init__(self, "GazeboPointSimpleCameraLocation_v0.launch")
-        self.vel_pub = rospy.Publisher('/mobile_base/commands/velocity', Twist, queue_size=5)
+		gazebo_env.GazeboEnv.__init__(self, "pioneer2dx_ros.launch")
+        #need to check cmd_vel topic at home
+        self.vel_pub = rospy.Publisher('/pioneer2dx/cmd_vel', Twist, queue_size=5)
         self.unpause = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         self.pause = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         self.reset_proxy = rospy.ServiceProxy('/gazebo/reset_simulation', Empty)
 
-
         self.action_space = spaces.Discrete(4) #F,L,R,B actions
         self.reward_range = (-np.inf, np.inf)
+        self.target = []
 
         self._seed()
 
@@ -63,13 +66,17 @@ class GazeboPointSimpleCameraLocation:
             vel_cmd.angular.z = 0.0
 
         data = None
-        ''' Need to figure out sensors
-        while data is None:   
+        while data is None:  
+            rospy.wait_for_service('/gazebo/get_model_state') 
             try:
-                data = rospy.wait_for_message('/scan', LaserScan, timeout=5)
-            except:
-                pass
-		'''
+                gms = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+                #need ot test at home not sure if correct
+                pose = gms(pioneer2dx)
+            except rospy.ServiceException, e:
+                print "Service call failed: %s"%e
+
+		state = pose
+
         rospy.wait_for_service('/gazebo/pause_physics')
         try:
             #resp_pause = pause.call()
@@ -77,17 +84,15 @@ class GazeboPointSimpleCameraLocation:
         except rospy.ServiceException, e:
             print ("/gazebo/pause_physics service call failed")
 
-        state,done = self.discretize_observation(data,5)
+        dist = np.linalg.norm(np.abs([3, 4, 5] - state))
 
-        ''' Need to figure out reward stuff
-        if not done:
-            if action == 0:
-                reward = 5
-            else:
-                reward = 1
-        else:
-            reward = -200
-		'''
+        done = False
+
+        if dist < 0.5:
+            done = True
+
+        reward = -1 * dist**2 / 500
+
         return state, reward, done, {}
 
 
@@ -110,22 +115,24 @@ class GazeboPointSimpleCameraLocation:
         except rospy.ServiceException, e:
             print ("/gazebo/unpause_physics service call failed")
 
-        ''' Sensors 
+        
         data = None
         while data is None:
             try:
                 data = rospy.wait_for_message('/scan', LaserScan, timeout=5)
             except:
                 pass
-		'''
+		
         rospy.wait_for_service('/gazebo/pause_physics')
-        try:
-            #resp_pause = pause.call()
-            self.pause()
-        except rospy.ServiceException, e:
-            print ("/gazebo/pause_physics service call failed")
+        rospy.wait_for_service('/gazebo/get_model_state') 
+            try:
+                gms = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+                #need ot test at home not sure if correct
+                pose = gms(pioneer2dx)
+            except rospy.ServiceException, e:
+                print "Service call failed: %s"%e
 
-        state = self.discretize_observation(data,5) 
+        state = pose
 
         return state
 
