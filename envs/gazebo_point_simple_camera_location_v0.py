@@ -19,9 +19,9 @@ from gazebo_msgs.srv import GetModelState
 
 class GazeboPointSimpleCameraLocation:
 
-	def __init__(self):
-		# Launch the simulation with the given launchfile name
-		gazebo_env.GazeboEnv.__init__(self, "pioneer2dx_ros.launch")
+    def __init__(self):
+        # Launch the simulation with the given launchfile name
+        gazebo_env.GazeboEnv.__init__(self, "pioneer2dx_ros.launch")
         #need to check cmd_vel topic at home
         self.vel_pub = rospy.Publisher('/pioneer2dx/cmd_vel', Twist, queue_size=5)
         self.unpause = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
@@ -35,18 +35,18 @@ class GazeboPointSimpleCameraLocation:
         self._seed()
 
     def _seed(self):
-    	self.np_random, seed = seeding.np_random(seed)
+        self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-	def _step(self, action):
-		rospy.wait_for_service('/gazebo/unpause_physics')
+    def _step(self, action):
+        rospy.wait_for_service('/gazebo/unpause_physics')
         try:
             self.unpause()
         except rospy.ServiceException, e:
             print ("/gazebo/unpause_physics service call failed")
 
-		#Discrete actions
-		if action == 0: #FORWARD
+        #Discrete actions
+        if action == 0: #FORWARD
             vel_cmd = Twist()
             vel_cmd.linear.x = 0.2
             vel_cmd.angular.z = 0.0
@@ -62,7 +62,7 @@ class GazeboPointSimpleCameraLocation:
             vel_cmd.angular.z = -0.2
             self.vel_pub.publish(vel_cmd)
         elif action == 3: #BACK 
-        	vel_cmd = Twist()
+            vel_cmd = Twist()
             vel_cmd.linear.x = -.02
             vel_cmd.angular.z = 0.0
 
@@ -79,7 +79,7 @@ class GazeboPointSimpleCameraLocation:
             except rospy.ServiceException, e:
                 print "Service call failed: %s"%e
 
-		state = pose
+        state = pose
 
         rospy.wait_for_service('/gazebo/pause_physics')
         try:
@@ -101,11 +101,9 @@ class GazeboPointSimpleCameraLocation:
 
         return state, reward, done, {}
 
+    def _reset(self):
 
-
-	def _reset(self):
-
-		# Resets the state of the environment and returns an initial observation.
+        # Resets the state of the environment and returns an initial observation.
         rospy.wait_for_service('/gazebo/reset_simulation')
         try:
             #reset_proxy.call()
@@ -128,19 +126,19 @@ class GazeboPointSimpleCameraLocation:
                 data = rospy.wait_for_message('/scan', LaserScan, timeout=5)
             except:
                 pass
-		
+        
         rospy.wait_for_service('/gazebo/pause_physics')
         rospy.wait_for_service('/gazebo/get_model_state') 
-            try:
-                gms = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-                #need ot test at home not sure if correct
-                resp1 = gms("pioneer2dx","")
-                pose = resp1.pose.position
-            except rospy.ServiceException, e:
-                print "Service call failed: %s"%e
+        try:
+            gms = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+            #need ot test at home not sure if correct
+            resp1 = gms("pioneer2dx","")
+            pose = resp1.pose.position
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
 
         state = pose
 
         return state
 
-	
+    
