@@ -17,7 +17,7 @@ from std_srvs.srv import Empty
 
 #from sensor_msgs.msg import what sensor are we using?
 
-class GazeboPointSimpleCameraLocation(gazebo_env.GazeboEnv)::
+class GazeboPointSimpleCameraLocation(gazebo_env.GazeboEnv):
 
     def __init__(self):
         # Launch the simulation with the given launchfile name
