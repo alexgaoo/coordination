@@ -1,2 +1,0 @@
-
--DCATKIN_DEVEL_PREFIX=/home/alex/Git/Research/coordination/envs/installation/catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/home/alex/Git/Research/coordination/envs/installation/catkin_ws/install -G Unix Makefiles
