@@ -23,14 +23,13 @@ class GazeboPointSimpleCameraLocation:
         # Launch the simulation with the given launchfile name
         gazebo_env.GazeboEnv.__init__(self, "pioneer2dx_ros.launch")
         #need to check cmd_vel topic at home
-        self.vel_pub = rospy.Publisher('/pioneer2dx/cmd_vel', Twist, queue_size=5)
+        self.vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
         self.unpause = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         self.pause = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         self.reset_proxy = rospy.ServiceProxy('/gazebo/reset_simulation', Empty)
 
         self.action_space = spaces.Discrete(4) #F,L,R,B actions
         self.reward_range = (-np.inf, np.inf)
-        self.target = []
 
         self._seed()
 
@@ -65,6 +64,7 @@ class GazeboPointSimpleCameraLocation:
             vel_cmd = Twist()
             vel_cmd.linear.x = -.02
             vel_cmd.angular.z = 0.0
+            self.vel_pub.publish(vel_cmd)
 
         data = None
 
@@ -88,7 +88,7 @@ class GazeboPointSimpleCameraLocation:
         except rospy.ServiceException, e:
             print ("/gazebo/pause_physics service call failed")
 
-        target = np.array([6, 3, 0])
+        target = np.array([6.0, 3.0, 0.0])
 
         dist = np.linalg.norm(np.abs(target - state))
 

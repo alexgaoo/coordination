@@ -1,2 +1,24 @@
+Installation: 
+
+Indigo Full install 
+
 sudo apt-get install gazebo5
 sudo apt-get install ros-indigo-gazebo5-ros-pkgs
+
+
+
+bash setup.bash
+copypaste bashrcfile.txt
+
+
+
+
+To run: 
+
+roscore & 
+
+(test) roslaunch pioneer2dx_ros.launch 
+
+
+
+
