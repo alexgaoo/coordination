@@ -68,14 +68,13 @@ class GazeboPointSimpleCameraLocation(gazebo_env.GazeboEnv):
         while data is None:
             rospy.wait_for_service('/gazebo/get_model_state')
             try:
-                data = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+                gms = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
                 #need to test at home not sure if correct
-                resp1 = data("pioneer2dx","world")
+                resp1 = gms("pioneer2dx","world")
                 pose = resp1.pose.position
+		data = True
             except rospy.ServiceException, e:
-                print "Service call failed: %s"%e
-
-        state = pose
+                print "Service call failed: %s"%e	
 
         rospy.wait_for_service('/gazebo/pause_physics')
         try:
@@ -83,9 +82,14 @@ class GazeboPointSimpleCameraLocation(gazebo_env.GazeboEnv):
             self.pause()
         except rospy.ServiceException, e:
             print ("/gazebo/pause_physics service call failed")
+	
+	pos = np.array([pose.x, pose.y, pose.z])
+	state = pos
+	
 
         target = np.array([6.0, 3.0, 0.0])
-
+	print state
+	print target
         dist = np.linalg.norm(np.abs(target - state))
 
         done = False
@@ -118,20 +122,24 @@ class GazeboPointSimpleCameraLocation(gazebo_env.GazeboEnv):
 
         data = None
         while data is None:
+            rospy.wait_for_service('/gazebo/get_model_state')
             try:
-                data = rospy.wait_for_message('/scan', LaserScan, timeout=5)
-            except:
-                pass
+                gms = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+                #need to test at home not sure if correct
+                resp1 = gms("pioneer2dx","world")
+                pose = resp1.pose.position
+		data = True
+            except rospy.ServiceException, e:
+                print "Service call failed: %s"%e
 
         rospy.wait_for_service('/gazebo/pause_physics')
-        rospy.wait_for_service('/gazebo/get_model_state')
-        try:
-            data = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-            #need ot test at home not sure if correct
-            resp1 = data("pioneer2dx","")
-            pose = resp1.pose.position
+	try:
+            #resp_pause = pause.call()
+            self.pause()
         except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
+            print ("/gazebo/pause_physics service call failed")
+
+        
 
         state = pose
 
