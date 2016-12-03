@@ -1,0 +1,14 @@
+syntax: glob
+
+build
+.DS_Store
+bin
+*.swp
+lib
+msg_gen
+srv_gen
+sandia_hand_msgs/src
+sandia_hand_driver/cfg/cpp
+*.cfgc
+sandia_hand_driver/docs
+src/sandia_hand_driver/cfg

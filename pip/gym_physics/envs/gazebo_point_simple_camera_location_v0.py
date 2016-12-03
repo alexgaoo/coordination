@@ -12,8 +12,9 @@ from gym.utils import seeding
 import gazebo_env
 from geometry_msgs.msg import Twist
 from std_srvs.srv import Empty
+#from gazebo_msgs.msg import ModelState
 # from gazebo.srv import *
-# from gazebo_msgs.srv import GetModelState
+from gazebo_msgs.srv import GetModelState
 
 #from sensor_msgs.msg import what sensor are we using?
 
@@ -31,11 +32,6 @@ class GazeboPointSimpleCameraLocation(gazebo_env.GazeboEnv):
         self.action_space = spaces.Discrete(4) #F,L,R,B actions
         self.reward_range = (-np.inf, np.inf)
 
-        self._seed()
-
-    def _seed(self):
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
 
     def _step(self, action):
         rospy.wait_for_service('/gazebo/unpause_physics')
@@ -67,14 +63,14 @@ class GazeboPointSimpleCameraLocation(gazebo_env.GazeboEnv):
             self.vel_pub.publish(vel_cmd)
 
         data = None
-
+	print "testlol"
         #Get robot position coordinates
         while data is None:
             rospy.wait_for_service('/gazebo/get_model_state')
             try:
-                gms = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+                data = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
                 #need to test at home not sure if correct
-                resp1 = gms("pioneer2dx","")
+                resp1 = data("pioneer2dx","world")
                 pose = resp1.pose.position
             except rospy.ServiceException, e:
                 print "Service call failed: %s"%e
@@ -96,7 +92,7 @@ class GazeboPointSimpleCameraLocation(gazebo_env.GazeboEnv):
 
         if dist < 0.5:
             done = True
-
+	print dist
         reward = -1 * dist**2 / 500
 
         return state, reward, done, {}
@@ -130,9 +126,9 @@ class GazeboPointSimpleCameraLocation(gazebo_env.GazeboEnv):
         rospy.wait_for_service('/gazebo/pause_physics')
         rospy.wait_for_service('/gazebo/get_model_state')
         try:
-            gms = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+            data = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
             #need ot test at home not sure if correct
-            resp1 = gms("pioneer2dx","")
+            resp1 = data("pioneer2dx","")
             pose = resp1.pose.position
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e

@@ -1,0 +1,13 @@
+data/osrf_msgs/package.xml.i
+data/osrf_msgs/CMakeLists.txt.i
+data/cmake/osrf-common-config.cmake.in.i
+data/.hgtags.i
+data/ros/osrf_msgs/package.xml.i
+data/.hgignore.i
+data/ros/osrf_msgs/msg/JointCommands.msg.i
+data/ros/osrf_msgs/Makefile.i
+data/ros/osrf_msgs/manifest.xml.i
+data/ros/CMakeLists.txt.i
+data/CMakeLists.txt.i
+data/ros/osrf_msgs/CMakeLists.txt.i
+data/osrf_msgs/msg/JointCommands.msg.i

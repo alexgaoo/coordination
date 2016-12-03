@@ -1,2 +1,2 @@
 - setup-file:
-    local-name: /home/alex/Git/Research/coordination/envs/installation/catkin_ws/devel/setup.sh
+    local-name: /home/alex/Git/Research/coordination/pip/gym_physics/envs/installation/catkin_ws/devel/setup.sh
