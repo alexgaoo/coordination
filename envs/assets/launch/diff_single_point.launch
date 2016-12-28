@@ -2,7 +2,7 @@
   <arg name="world_file"  default="$(env GYM_GAZEBO_WORLD_POINT)"/>
   <arg name="gui" default="true"/>
   <arg name="headless" default="false"/>
-  <param name="robot_model" textfile="/home/alex/Git/Research/coordination/pip/gym_physics/envs/assets/models/pioneer2dx/model.sdf" />
+  <param name="robot_model" textfile="/home/alex/Git/Research/coordination/envs/installation/../assets/models/pioneer2dx/model.sdf" />
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="use_sim_time" value="true"/>
@@ -19,8 +19,8 @@
 	output="screen">
   </node>
 
-  <!--node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
     <param name="publish_frequency" type="double" value="30.0" />
-  </node>-->
+  </node>
 
 </launch>
