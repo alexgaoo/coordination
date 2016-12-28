@@ -17,3 +17,7 @@ def dense(x, inputFeatures, outputFeatures, scope=None, with_w=False):
             return tf.matmul(x, matrix) + bias, matrix, bias
         else:
             return tf.matmul(x, matrix) + bias
+
+def weighted_values(values, probabilities, size):
+    bins = np.add.accumulate(probabilities)
+    return values[np.digitize(np.random.random_sample(size), bins)]

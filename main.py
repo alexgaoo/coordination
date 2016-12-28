@@ -2,13 +2,15 @@ import tensorflow as tf
 import numpy as np
 import random
 import gym
+import gym_buttons
 import math
 from ops import *
+import time
 
 class Agent():
     def __init__(self):
         self.num_observations = 4
-        self.num_actions = 2
+        self.num_actions = 4
         self.batchsize = None
 
     def policy_gradient(self):
@@ -24,7 +26,7 @@ class Agent():
             good_probabilities = tf.reduce_sum(tf.mul(output, self.policy_actions),reduction_indices=[1])
             eligibility = tf.log(good_probabilities) * self.policy_advantages
             loss = -tf.reduce_sum(eligibility)
-            self.policy_train = tf.train.AdamOptimizer(0.01).minimize(loss)
+            self.policy_train = tf.train.AdamOptimizer(0.001).minimize(loss)
             self.policy_eval = output
 
     def value_function(self):
@@ -36,7 +38,7 @@ class Agent():
             output = dense(h1, 32, 1, "output")
 
             loss = tf.nn.l2_loss(self.value_newvals - output)
-            self.value_train = tf.train.AdamOptimizer(0.1).minimize(loss)
+            self.value_train = tf.train.AdamOptimizer(0.01).minimize(loss)
             self.value_eval = output
 
     def train(self):
@@ -44,7 +46,8 @@ class Agent():
         self.value_function()
 
 
-        env = gym.make('CartPole-v0')
+        env = gym.make('ButtonTwo-v0')
+
         self.sess = tf.Session();
         self.sess.run(tf.initialize_all_variables())
 
@@ -58,13 +61,28 @@ class Agent():
             update_vals = []
 
             for i in xrange(200):
+                # time.sleep(0.1)
+
                 # calculate policy
                 obs_vector = np.expand_dims(observation, axis=0)
                 probs = self.sess.run(self.policy_eval,feed_dict={self.policy_state: obs_vector})
-                action = 0 if random.uniform(0,1) < probs[0][0] else 1
+                possible_actions = np.array(range(self.num_actions))
+
+                action = weighted_values(possible_actions, probs[0], 1)[0]
+                if np.random.rand() < 0.1:
+                    action = weighted_values(possible_actions, np.array([0.25, 0.25, 0.25, 0.25]), 1)[0]
+                # print action
+
+
+
+                # debug stuff
+                if e % 50 == 0:
+                    env.render()
+                    print probs[0]
+
                 # record the transition
                 states.append(observation)
-                actionblank = np.zeros(2)
+                actionblank = np.zeros(self.num_actions)
                 actionblank[action] = 1
                 actions.append(actionblank)
                 # take the action in the environment

@@ -12,3 +12,10 @@ register(
     entry_point='gym_physics.envs:GazeboPointSimpleCameraLocation',
     # More arguments here
 )
+
+
+register(
+    id='Coordination1D-v0',
+    entry_point='gym_physics.envs:Coordination1D',
+    # More arguments here
+)
