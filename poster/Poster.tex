@@ -1,0 +1,264 @@
+\documentclass[final]{beamer}
+\usepackage[scale=1.24]{beamerposter}
+\usepackage{graphicx,booktabs,tabularx,algorithm,amsmath,caption}
+\usepackage[noend]{algpseudocode}
+\usepackage{helvet,tikz}
+
+\usetikzlibrary{arrows,fit,patterns}
+
+
+\usetheme{confposter}
+\setbeamercolor{block title}{fg=Maroon,bg=white}
+\setbeamercolor{block body}{fg=black,bg=white}
+\setbeamercolor{block alerted title}{fg=white,bg=Maroon!70}
+\setbeamercolor{block alerted body}{fg=black,bg=Maroon!10}
+
+\newlength{\sepwid}
+\newlength{\onecolwid}
+\newlength{\twocolwid}
+\newlength{\threecolwid}
+\setlength{\paperwidth}{48in}
+\setlength{\paperheight}{48in}
+\setlength{\sepwid}{0.024\paperwidth}
+\setlength{\onecolwid}{0.22\paperwidth}
+\setlength{\twocolwid}{0.464\paperwidth}
+\setlength{\threecolwid}{0.708\paperwidth}
+\setlength{\topmargin}{-0.5in}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+
+
+\title{Fido: A Universal Robot Control System Using\\Reinforcement Learning with Limited Feedback}
+\author{\LARGE Joshua Gruenstein \and Michael Truell}
+\institute{\mbox{}}
+
+\begin{document}
+
+\addtobeamertemplate{block end}{}{\vspace*{2ex}}
+\addtobeamertemplate{block alerted end}{}{\vspace*{2ex}}
+\setlength{\belowcaptionskip}{2ex}
+\setlength\belowdisplayshortskip{2ex}
+
+\begin{frame}[t]
+\begin{columns}[t]
+
+\begin{column}{\sepwid}\end{column}
+\begin{column}{\onecolwid}
+
+	\begin{alertblock}{Control System Objectives}
+		Fido was created to fulfill the following goals:
+		\begin{itemize}
+			\item \textbf{Trainability}: Allow both human and autonomous training and retraining rather than programming
+			\item \textbf{Universality}: Run on any robot and perform any task, even without prior knowledge of the host
+			\item \textbf{Performance}: Require few learning iterations and low latency for quick and efficient training
+		\end{itemize}
+		To achieve this, we developed a novel machine learning algorithm utilizing wire-fitted Q-Learning with a dynamically resized neural network, a uncertainty-based probabilistic action selection model, and experience replay.  The control system could be trained at a rate \textbf{4 times} the industry standard, allowing practicality over traditional pre-programmed control systems.
+	\end{alertblock}
+
+	\begin{block}{System Overview}
+		\begin{algorithm}[H]
+		\caption*{\textbf{Fido Control System Algorithm}}\label{euclid}
+		\small
+		\begin{algorithmic}[1]
+			\State Initialize empty replay memory $M$
+			\State Initialize neural network with random weights
+			\State Uncertainty value $u \gets \infty$
+
+			\Loop
+			  \State Observe state $s_t$
+			  \State Feed vector $s_t$ to model and generate continuous function $Q(a)$ of action versus reward
+			  \State Select action $a_t$ with expected reward $r_t^*$ using a Softmax action selection policy with temperature $T \propto u$ and the generated $Q(a)$ function.
+			  \State Execute action $a_t$ and observe reward $r_t$ and new state $s_{t+1}$
+			  \State Store ($s_t$, $a_t$, $r_t$, $s_{t+1}$) in $M$
+			  \State $u \propto (r_t-r_t^*)^2$
+			  \State Sample $n \propto {1/u}$ experiences $e$ giving weight to newer experiences.
+			  \State Perform a search on model architectures with cost function as error in predicting $e$ when trained on $e$ using stochastic gradient descent and Adadelta
+			  \State Update current model with result of search
+		  \EndLoop
+		\end{algorithmic}
+		\end{algorithm}
+
+		From a macro perspective, Fido can be viewed as a ``black box'' system, where a set of inputs (such as sensors) go in and a set of outputs (actions) go out.  Fido's goal is to maximize given reward by altering its behavior.  The system operates through the following steps:
+
+		\begin{enumerate}
+			\item Sensor values are fed to the model, made up of a neural network and an interpolator.
+			\item The model creates a continuous function of action to expected reward.
+			\item An action is chosen using an probabalistic selection policy that dynamically adjusts Fido's exploration level as its uncertainty level changes.
+			\item Fido recieves reward ranging from -1 to 1, and the model is updated using Adadelta and stochastic gradient descent.
+			\item Dynamic neural network resizing and experience replay are employed to reduce training time.
+		\end{enumerate}
+	\end{block}
+
+\end{column}
+
+\begin{column}{\sepwid}\end{column}
+
+\begin{column}{\twocolwid}
+
+\vspace{-1.65cm}
+
+\begin{columns}[t,totalwidth=\twocolwid]
+
+	\begin{column}{\onecolwid}
+		\begin{block}{Reinforcement Learning}
+			\begin{itemize}
+				\item Fido is a \textbf{reinforcement learning system}. Its goal is to accurately estimate the reward for any action it can perform.
+				\item The system uses \textbf{Q-Learning}, a popular reinforcement learning algorithm that develops a function that intakes a state-action pair and outputs expected utility.
+				\item Fido utilizes a \textbf{neural network} coupled with a \textbf{wire-fitted moving least squares interpolator}, instead of the traditional table, to estimate its reward. This allows relations to be made between similar actions and similar states. Our neural network accepts the state and outputs a few actions along with their expected rewards. Fido interpolates these action-reward pairs to create a continuous function of action to reward.
+				\item Once Fido performs an action and receives a reward (a single \textbf{learning iteration}), the control system calculates its \textbf{uncertainty value} as the difference between its expected and received reward. Higher uncertainty means that Fido is still learning or undergoing retraining.
+				\item Fido selects actions to perform using a probabilistic Softmax policy which gives greater weight to actions with greater expected utility, but allows for exploration.
+				\begin{itemize}
+					\item Fido dynamically adjusts its exploration level to be proportional to its uncertainty value.
+					\item This allows Fido not only to execute the what it thinks are the best actions once it has fully learned a task, but also to explore when being retrained.  This results in lower training times and higher average reward.
+				\end{itemize}
+			\end{itemize}
+		\end{block}
+	\end{column}
+
+	\begin{column}{\onecolwid}\begin{block}{Training}
+
+	\vspace{-0.5cm}
+
+	\begin{figure}
+		\centering
+		\includegraphics[width=.8\linewidth]{Figures/FidoNeuralNetworkRendered}
+		\caption{Fido's Neural Network}
+		\label{fig:feedforward}
+	\end{figure}
+
+	\vspace{-1.5cm}
+
+	\begin{itemize}
+		\item After every learning iteration, Fido adjusts its model to correct the disparity between its expected reward and the reward it just recieved using \textbf{Stochastic Gradient Descent} to modify the action-reward pairs that are outputted by its neural network.
+		\item Fido trains its neural network using the Adadelta training method, eliminating the need to specify a hard-coded learning rate.
+		\item Fido uses \textbf{experience replay}, the practice of training a system on past states, actions, and rewards to decrease training time. Every learning iteration, Fido is trained on past experiences.  Newer experiences are more likely to be sampled for retraining. If uncertainty value of the model begins to rise, Fido samples fewer experiences, because past rewards will be incorrect if Fido is being trained on a new task.
+		\item After each learning iteration, Fido efficiently grows and prunes its neural network to the optimal size and architecture for the task at hand, using neuron sensitivity approximations.
+	\end{itemize}
+
+\end{block}
+
+\end{column}
+
+\end{columns}
+	\vspace{-1cm}
+	\begin{block}{Results}
+		Results were gathered both from simulation and hardware for a variety of tasks.    Gathered data for each task includes the number of learning iterations (pieces of reward necessary to learn the task), average action selection time (latency in selecting an action), and average training time (latency in updating Fido's model).
+		\begin{table}[ht]
+			\centering
+			\caption {Fido Results in Simulation (400 trials per task)} \label{tab:simresults}
+			\vspace{-1cm}
+			\begin{tabularx}{.9\textwidth}{l||Y|Y|Y}
+				\toprule
+				Task        & Learning Iterations & Action Selection (ms) & Training Time (ms) \\ \midrule
+				Flash       & 3                  & 0.                    & 28                  \\
+				Float to Point       & 14         & 1                     & 63                 \\
+				Drive to Point       & 16         & 1                     & 94                 \\
+				Line Following       & 10         & 0.                    & 90                  \\
+				Noisy Line Following & 12         & 0.                    & 323                \\
+				\bottomrule
+			\end{tabularx}
+		\end{table}
+		\vspace{.5cm}
+
+		\begin{table}[ht]
+			\centering
+			\caption {Fido Results on Thing One (20 trials per task)} \label{tab:thingoneresults}
+			\vspace{-1cm}
+			\begin{tabularx}{.9\textwidth}{l||Y|Y|Y}
+				\toprule
+				Task              & Learning Iterations & Action Selection (ms) & Training Time (ms) \\ \midrule
+				Stay Still        & 3                   & 1                    & 80                  \\
+				Drive to Point    & 18                  & 4                     & 307                  \\
+				\bottomrule
+			\end{tabularx}
+		\end{table}
+
+		\begin{table}[ht]
+			\centering
+			\caption {Fido Results on Thing Two (20 trials per task)} \label{tab:thingtworesults}
+			\vspace{-1cm}
+			\begin{tabularx}{.9\textwidth}{l||Y|Y|Y}
+				\toprule
+				Task              & Learning Iterations & Action Selection (ms) & Training Time (ms) \\ \midrule
+				Drive Straight         & 13                   & 2                    & 215                 \\
+				Line Following         & 15                  & 21                    & 398                \\
+				Fetch                  & 8                  & 1                     & 246                 \\
+				Limping Line Following & 6                   & 20                    & 464                 \\
+				\bottomrule
+			\end{tabularx}
+		\end{table}
+
+		\begin{table}[ht]
+			\centering
+			\caption {Fido Results on Thing Three (20 trials per task)} \label{tab:thingtworesults}
+			\vspace{-1cm}
+			\begin{tabularx}{.9\textwidth}{l||Y|Y|Y}
+				\toprule
+				Task              & Learning Iterations & Action Selection (ms) & Training Time (ms) \\ \midrule
+				Draw Square         & 5                   & 5                    & 40                 \\
+				Ping Pong          & 8                  & 3                    & 379                \\
+				\bottomrule
+			\end{tabularx}
+		\end{table}
+
+	\end{block}
+
+\end{column}
+
+\begin{column}{\sepwid}\end{column}
+
+\begin{column}{\onecolwid}
+	\begin{alertblock}{Fido vs. Industry Standard}
+		Fido's performance in completing various simulator tasks was tested against the industry standard of discrete Q-Learning using a neural network.  On average, Fido required \textbf{over four times fewer} learning iterations than discrete Q-Learning for a given task.
+		\vspace{0.1cm}
+		\begin{table}[ht]
+			\centering
+			\caption {Fido Results Compared to Discrete Q-Learning} \label{tab:simresults}
+			\vspace{-1cm}
+			\small
+			\begin{tabularx}{0.95\textwidth}{lYY}
+				\toprule
+				Task        & Fido Learning Iterations & Discrete Learning Iterations \\ \midrule
+				Flash             & 3   & 16  \\
+				Float to Point    & 14  & 56  \\
+				Drive to Point    & 16  & 69  \\
+				Line Following    & 10  & 42 \\
+			\end{tabularx}
+		\end{table}
+	\end{alertblock}
+	\begin{block}{Implementation}
+		\setlength\parindent{48pt}
+		\indent The Fido control system was programmed in C++, with no external dependencies. Three hardware implementations (named Things One, Two, and Three) and a simulator were constructed to test Fido's performance.  The first robot utilized a differential drive system and was powered by an Intel Edison, the second used a holonomic wheel arrangement and ran on a \$5 Raspberry Pi Zero, while the third was a 4-axis arm controlled by a Raspberry Pi Zero.  The ``things'' were administered reward over Wi-Fi from a cross-platform mobile app.
+
+		\begin{figure}
+			\centering
+			\includegraphics[width=.8\linewidth]{Figures/Screenshot.png}
+			\caption{Fido Simulator Graphical User Interface}
+		\end{figure}
+
+		\vspace{-1cm}
+
+		\begin{figure}[ht]
+			\centering
+			\includegraphics[width=.8\linewidth]{Figures/combinedKinematics.png}
+			\caption{Fido Hardware Implementation Kinematics}
+		\end{figure}
+
+		\vspace{-0.5in}
+
+	\end{block}
+
+	\begin{block}{Applications}
+		Fido provides numerous advantages over traditional procedural-programmed control systems, making it practical for a number of real world applications.  As Fido can be trained and retrained without expert knowledge, it could be useful in making robotics more accessible to consumers and small-buisness owners.  Fido can also be retrained to adapt to new and unexpected circumstances such as malfunctions in the field, an advantageous feature for militiary applications.
+	\end{block}
+
+\end{column}
+
+\end{columns}
+\end{frame}
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Adapted from "Jacobs Landscape Poster"
+% https://teamwork.jacobs-university.de:8443/confluence/display/CoPandBiG/LaTeX+Poster
+% License: CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
