@@ -1,9 +1,8 @@
 import numpy as np
 
 from gym import spaces
-from madrl_environments import Agent
 
-class Agent(Agent):
+class Agent():
 
     # constructor
     def __init__(self,
@@ -68,10 +67,6 @@ class Agent(Agent):
         # if dead or reached goal dont move
         if self.terminal:
             return cpos
-        # if in building, dead, and stay there
-        if self.inbuilding(cpos[0], cpos[1]):
-            self.terminal = True
-            return cpos
         tpos = self.temp_pos
         tpos[0] = cpos[0]
         tpos[1] = cpos[1]
@@ -83,7 +78,7 @@ class Agent(Agent):
         if not self.inbounds(x, y):
             return cpos
         # if bumped into building, then stay
-        if self.inbuilding(x, y):
+        if self.isdelivered(x, y):
             return cpos
         else:
             lpos[0] = cpos[0]
@@ -103,7 +98,7 @@ class Agent(Agent):
             return True
         return False
 
-    def inbuilding(self, x, y):
+    def isdelivered(self, x, y):
         if self.map_matrix[x,y] == -1:
             return True
         return False
