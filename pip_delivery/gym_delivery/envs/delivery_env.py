@@ -27,8 +27,8 @@ class DeliveryEnv(gym.Env, map_pool):
     #     'video.frames_per_second' : 50
     # }
 
-    def __init__(self, **kwargs):
-        
+    def __init__(self, n_agents, obs_range, ):
+
 
         self.map_pool = map_pool
         map_matrix = map_pool[0]
@@ -42,10 +42,9 @@ class DeliveryEnv(gym.Env, map_pool):
 
         self.obs_range = 3  # can see 3 grids around them by default
         #assert self.obs_range % 2 != 0, "obs_range should be odd"
-        self.obs_offset = int((self.obs_range - 1) / 2)
+        # self.obs_offset = int((self.obs_range - 1) / 2)
 
-
-        self.agents = agent_utils.create_agents(self.n_pursuers, map_matrix, self.obs_range)
+        self.agents = agent_utils.create_agents(self.n_agents, map_matrix, self.obs_range)
 
         self.agent_layer = AgentLayer(xs, ys, self.agents)
 
@@ -56,15 +55,13 @@ class DeliveryEnv(gym.Env, map_pool):
 
         n_act = self.agent_layer.get_nactions(0)
 
-        self.evader_controller = kwargs.pop('evader_controller', RandomPolicy(n_act_purs))
-        self.pursuer_controller = kwargs.pop('pursuer_controller', RandomPolicy(n_act_ev))
+        self.agent_controller = RandomPolicy(n_act))
 
         self.current_agent_layer = np.zeros((xs, ys), dtype=np.int32)
 
-        self.catchr = kwargs.pop('catchr', 0.01)
-        self.caughtr = kwargs.pop('caughtr', -0.01)
+        self.delivered = 0.1
 
-        self.delivered =  5.0
+        self.all_delivered = 5.0
 
         # self.include_id = kwargs.pop('include_id', True)
 
@@ -78,8 +75,8 @@ class DeliveryEnv(gym.Env, map_pool):
         #     self.high = np.append(self.high, 1.0)
         self.action_space = spaces.Discrete(n_act)
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(4, self.obs_range, self.obs_range))
-        self.local_obs = np.zeros(
-            (self.n_agents, 4, self.obs_range, self.obs_range))  # Nagents X 3 X xsize X ysize
+        # self.local_obs = np.zeros(
+        #     (self.n_agents, 4, self.obs_range, self.obs_range))  # Nagents X 3 X xsize X ysize
         self.act_dims = [n_act for i in xrange(self.n_agents)]
 
         self.model_state = np.zeros((4,) + map_matrix.shape, dtype=np.float32)
@@ -106,9 +103,9 @@ class DeliveryEnv(gym.Env, map_pool):
         return np.array(self.state), reward, done, {}
 
     def _reset(self):
-        
 
-        return 
+
+        return
 
     @property
     def is_terminal(self):
