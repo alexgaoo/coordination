@@ -6,19 +6,13 @@ class Agent():
 
     # constructor
     def __init__(self,
-                 xs,
-                 ys,
-                 map_matrix, # the map of the environemnt (-1 are buildings)
-                 obs_range=3,
-                 n_channels=3, # number of observation channels
+                 # obs_range=3,
+                 # n_channels=3, # number of observation channels
                  seed=1
                  # flatten=False
                  ):
 
         self.random_state = np.random.RandomState(seed)
-
-        self.xs = xs
-        self.ys = ys
 
         self.eactions = [0, # move left
                          1, # move right
@@ -74,12 +68,12 @@ class Agent():
         tpos += self.motion_range[a]
         x = tpos[0]
         y = tpos[1]
-        # check bounds
-        if not self.inbounds(x, y):
-            return cpos
+        # # check bounds
+        # if not self.inbounds(x, y):
+        #     return cpos
         # if bumped into building, then stay
-        if self.isdelivered(x, y):
-            return cpos
+        # if self.isdelivered(x, y):
+        #     return cpos
         else:
             lpos[0] = cpos[0]
             lpos[1] = cpos[1]
@@ -93,15 +87,15 @@ class Agent():
     #################################################################
     # Helper Functions
     #################################################################
-    def inbounds(self, x, y):
-        if 0 <= x < self.xs and 0 <= y < self.ys:
-            return True
-        return False
+    # def inbounds(self, x, y):
+    #     if 0 <= x < self.xs and 0 <= y < self.ys:
+    #         return True
+    #     return False
 
-    def isdelivered(self, x, y):
-        if self.map_matrix[x,y] == -1:
-            return True
-        return False
+    # def isdelivered(self, x, y):
+    #     if self.map_matrix[x,y] == -1:
+    #         return True
+    #     return False
 
     def nactions(self):
         return len(self.eactions)
