@@ -2,6 +2,7 @@ import numpy as np
 
 #################################################################
 # Implements a Cooperating Agent Layer for 2D problems
+
 #################################################################
 
 class AgentLayer():
