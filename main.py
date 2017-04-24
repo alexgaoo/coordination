@@ -1,127 +1,109 @@
-import tensorflow as tf
 import numpy as np
-import random
+import tensorflow as tf
 import gym
+from utils import *
+from model import *
+import argparse
+from rollouts import *
+import json
 import gym_buttons
-import math
-from ops import *
-import time
 
-class Agent():
-    def __init__(self):
-        self.num_observations = 4
-        self.num_actions = 4
-        self.batchsize = None
+parser = argparse.ArgumentParser(description='TRPO.')
+# these parameters should stay the same
+parser.add_argument("--task", type=str, default='Reacher-v1')
+parser.add_argument("--timesteps_per_batch", type=int, default=10000)
+parser.add_argument("--n_steps", type=int, default=50000000)
+parser.add_argument("--gamma", type=float, default=.99)
+parser.add_argument("--max_kl", type=float, default=.01)
+parser.add_argument("--cg_damping", type=float, default=1e-3)
+parser.add_argument("--num_threads", type=int, default=5)
+parser.add_argument("--monitor", type=bool, default=False)
+parser.add_argument("--policymode", type=str, default="single")
 
-    def policy_gradient(self):
-        with tf.variable_scope("policy"):
-            self.policy_state = tf.placeholder(tf.float32, [self.batchsize, self.num_observations])
-            self.policy_actions = tf.placeholder(tf.float32, [self.batchsize, self.num_actions])
-            self.policy_advantages = tf.placeholder(tf.float32, [self.batchsize, 1])
+# change these parameters for testing
+parser.add_argument("--decay_method", type=str, default="none") # adaptive, none
+parser.add_argument("--timestep_adapt", type=int, default=0)
+parser.add_argument("--kl_adapt", type=float, default=0)
 
-            h1 = tf.nn.relu(dense(self.policy_state, self.num_observations, 32, "h1"))
-            output = tf.nn.softmax(dense(h1, 32, self.num_actions, "output"))
+args = parser.parse_args()
+args.max_pathlength = gym.spec(args.task).timestep_limit
 
-            # vector of size batchsize
-            good_probabilities = tf.reduce_sum(tf.mul(output, self.policy_actions),reduction_indices=[1])
-            eligibility = tf.log(good_probabilities) * self.policy_advantages
-            loss = -tf.reduce_sum(eligibility)
-            self.policy_train = tf.train.AdamOptimizer(0.001).minimize(loss)
-            self.policy_eval = output
+learner_tasks = multiprocessing.JoinableQueue()
+learner_results = multiprocessing.Queue()
+learner_env = gym.make(args.task)
 
-    def value_function(self):
-        with tf.variable_scope("value"):
-            self.value_state = tf.placeholder(tf.float32, [self.batchsize, self.num_observations])
-            self.value_newvals = tf.placeholder(tf.float32, [self.batchsize, 1])
+learner = TRPO(args, learner_env.observation_space, learner_env.action_space, learner_tasks, learner_results)
+learner.start()
+rollouts = ParallelRollout(args)
 
-            h1 = tf.nn.relu(dense(self.value_state, self.num_observations, 32, "h1"))
-            output = dense(h1, 32, 1, "output")
+learner_tasks.put(1)
+learner_tasks.join()
+starting_weights = learner_results.get()
+rollouts.set_policy_weights(starting_weights)
 
-            loss = tf.nn.l2_loss(self.value_newvals - output)
-            self.value_train = tf.train.AdamOptimizer(0.01).minimize(loss)
-            self.value_eval = output
+start_time = time.time()
+history = {}
+history["rollout_time"] = []
+history["learn_time"] = []
+history["mean_reward"] = []
+history["timesteps"] = []
 
-    def train(self):
-        self.policy_gradient()
-        self.value_function()
+# start it off with a big negative number
+last_reward = -1000000
+recent_total_reward = 0
 
+totalsteps = 0;
 
-        env = gym.make('ButtonTwo-v0')
+starting_timesteps = args.timesteps_per_batch
+starting_kl = args.max_kl
 
-        self.sess = tf.Session();
-        self.sess.run(tf.initialize_all_variables())
+# saved_policy = np.load("policy.npy")
+# rollouts.set_policy_weights(saved_policy)
 
-        for e in xrange(2000):
-            observation = env.reset()
-            totalreward = 0
-            states = []
-            actions = []
-            advantages = []
-            transitions = []
-            update_vals = []
+iteration = 0
+while True:
+    iteration += 1;
 
-            for i in xrange(200):
-                # time.sleep(0.1)
+    if iteration % 100 == 0:
+        rollouts.discretize()
 
-                # calculate policy
-                obs_vector = np.expand_dims(observation, axis=0)
-                probs = self.sess.run(self.policy_eval,feed_dict={self.policy_state: obs_vector})
-                possible_actions = np.array(range(self.num_actions))
+    # runs a bunch of async processes that collect rollouts
+    rollout_start = time.time()
+    paths = rollouts.rollout()
+    rollout_time = (time.time() - rollout_start) / 60.0
 
-                action = weighted_values(possible_actions, probs[0], 1)[0]
-                if np.random.rand() < 0.1:
-                    action = weighted_values(possible_actions, np.array([0.25, 0.25, 0.25, 0.25]), 1)[0]
-                # print action
+    # Why is the learner in an async process?
+    # Well, it turns out tensorflow has an issue: when there's a tf.Session in the main thread
+    # and an async process creates another tf.Session, it will freeze up.
+    # To solve this, we just make the learner's tf.Session in its own async process,
+    # and wait until the learner's done before continuing the main thread.
+    learn_start = time.time()
+    learner_tasks.put((2,args.max_kl))
+    learner_tasks.put(paths)
+    learner_tasks.join()
+    new_policy_weights, mean_reward = learner_results.get()
+    learn_time = (time.time() - learn_start) / 60.0
+    print "-------- Iteration %d ----------" % iteration
+    print "Total time: %.2f mins" % ((time.time() - start_time) / 60.0)
 
+    history["rollout_time"].append(rollout_time)
+    history["learn_time"].append(learn_time)
+    history["mean_reward"].append(mean_reward)
+    history["timesteps"].append(args.timesteps_per_batch)
 
+    recent_total_reward += mean_reward
 
-                # debug stuff
-                if e % 50 == 0:
-                    env.render()
-                    print probs[0]
+    print "Current steps is " + str(args.timesteps_per_batch) + " and KL is " + str(args.max_kl)
 
-                # record the transition
-                states.append(observation)
-                actionblank = np.zeros(self.num_actions)
-                actionblank[action] = 1
-                actions.append(actionblank)
-                # take the action in the environment
-                old_observation = observation
-                observation, reward, done, info = env.step(action)
-                transitions.append((old_observation, action, reward))
-                totalreward += reward
+    if iteration % 100 == 0:
+        with open("%s-%s" % (args.task, args.policymode), "w") as outfile:
+            json.dump(history,outfile)
 
-                if done:
-                    break
+    totalsteps += args.timesteps_per_batch
+    print "%d total steps have happened" % totalsteps
+    if totalsteps > args.n_steps:
+        break
 
-            for index, trans in enumerate(transitions):
-                obs, action, reward = trans
+    rollouts.set_policy_weights(new_policy_weights)
 
-                # calculate discounted monte-carlo return
-                future_reward = 0
-                future_transitions = len(transitions) - index
-                decrease = 1
-                for index2 in xrange(future_transitions):
-                    future_reward += transitions[(index2) + index][2] * decrease
-                    decrease = decrease * 0.97
-                obs_vector = np.expand_dims(obs, axis=0)
-                currentval = self.sess.run(self.value_eval,feed_dict={self.value_state: obs_vector})[0][0]
-
-                # advantage: how much better was this action than normal
-                advantages.append(future_reward - currentval)
-
-                # update the value function towards new return
-                update_vals.append(future_reward)
-
-            # update value function
-            update_vals_vector = np.expand_dims(update_vals, axis=1)
-            self.sess.run(self.value_train, feed_dict={self.value_state: states, self.value_newvals: update_vals_vector})
-            # real_vl_loss = sess.run(vl_loss, feed_dict={vl_state: states, vl_newvals: update_vals_vector})
-
-            advantages_vector = np.expand_dims(advantages, axis=1)
-            self.sess.run(self.policy_train, feed_dict={self.policy_state: states, self.policy_advantages: advantages_vector, self.policy_actions: actions})
-
-            print totalreward
-
-a = Agent()
-a.train()
+rollouts.end()

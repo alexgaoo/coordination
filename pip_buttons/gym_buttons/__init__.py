@@ -13,5 +13,5 @@ register(
 register(
     id='ButtonTwo-v0',
     entry_point='gym_buttons.envs:ButtonTwoEnv',
-    timestep_limit=1000,
+    timestep_limit=200,
 )

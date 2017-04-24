@@ -9,6 +9,8 @@ import gym
 from gym import spaces
 from gym.utils import seeding
 import numpy as np
+from random import randint
+
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +20,15 @@ class ButtonTwoEnv(gym.Env):
         'video.frames_per_second' : 50
     }
 
+
+
     def __init__(self):
         # new action space = [left, right, up, down]
-        self.action_space = spaces.Discrete(4)
-        self.observation_space = spaces.Box(-1, 1, shape=(4,))
+        self.action_space = spaces.Box(-1.0, 1.0, shape=(2*5,))
+        self.observation_space = spaces.Box(-1.0, 1.0, shape=(2*5 + 2*5,))
+
+        self.num_agents = 5
+        self.num_goals = 5
 
         self._seed()
         self.reset()
@@ -43,30 +50,36 @@ class ButtonTwoEnv(gym.Env):
         return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
 
     def _step(self, action):
+
+        action = np.tanh(action)
+
         assert self.action_space.contains(action), "%r (%s) invalid"%(action, type(action))
-        state = self.state
-        agent_x, agent_y, goal_x, goal_y = state
+        reward = 0
+        for i in xrange(self.num_agents):
+            self.state[2*i] = self.state[2*i] + action[i]*5
+            self.state[2*i + 1] = self.state[2*i + 1] + action[i+1]*5
 
-        if action == 0:
-            agent_x += 1;
-        elif action == 1:
-            agent_x -= 1;
-        elif action == 2:
-            agent_y += 1;
-        elif action == 3:
-            agent_y -= 1;
-
-        self.state = (agent_x, agent_y, goal_x, goal_y)
+            individualreward = -1
+            for j in xrange(self.num_goals):
+                newreward = -1 * ((self.state[self.num_agents*2 + 2*j] - self.state[2*i])**2 + (self.state[self.num_agents*2 + 2*j + 1] - self.state[2*i + 1])**2) / 500
+                if individualreward == -1:
+                    individualreward = newreward
+                elif newreward > individualreward:
+                    individualreward = newreward
+            reward += individualreward
 
         done = False
 
-        # reward =  -1 * self._distance(agent_x, agent_y, 90.0, goal_y + 0.0) / 100
-        reward = -1 * ((80.0 - agent_x)**2 + (80.0 - agent_y)**2) / 500
-
-        return np.array(self.state), reward, done, {}
+        return self.state, reward, done, {}
 
     def _reset(self):
-        self.state = np.array((40, 40, 80, 80))
+        self.state = np.array([])
+        for i in xrange(self.num_agents):
+            goalpos = [20. + i*30, 20.]
+            self.state = np.append(self.state, goalpos)
+        for i in xrange(self.num_goals):
+            goalpos = [20. + i*30, 80.]
+            self.state = np.append(self.state, goalpos)
 
         return self.state
 
@@ -84,19 +97,29 @@ class ButtonTwoEnv(gym.Env):
         if self.viewer is None:
             from gym.envs.classic_control import rendering
             self.viewer = rendering.Viewer(screen_width, screen_height, display=self.display)
-            self.man_trans = rendering.Transform()
-            self.man = rendering.make_circle(10)
-            self.man.add_attr(self.man_trans)
-            self.goal_trans = rendering.Transform()
-            self.goal = rendering.make_circle(10)
-            self.goal.add_attr(self.goal_trans)
-            self.man.set_color(.5,.5,.8)
-            self.viewer.add_geom(self.man)
-            self.viewer.add_geom(self.goal)
+
+            self.men = []
+            for i in xrange(self.num_agents):
+                man_trans = rendering.Transform()
+                man = rendering.make_circle(10)
+                man.add_attr(man_trans)
+                man.set_color(.5,.5,.8)
+                self.viewer.add_geom(man)
+                self.men.append(man_trans)
+
+            self.goals = []
+            for i in xrange(self.num_goals):
+                self.goal_trans = rendering.Transform()
+                self.goal = rendering.make_circle(10)
+                self.goal.add_attr(self.goal_trans)
+                self.viewer.add_geom(self.goal)
+                self.goals.append(self.goal_trans)
 
 
-        agent_x, agent_y, goal_x, goal_y = self.state
-        self.man_trans.set_translation(agent_x*4, agent_y*4)
-        self.goal_trans.set_translation(goal_x*4, goal_y*4)
+        for i in xrange(self.num_agents):
+            self.men[i].set_translation(self.state[2*i]*4, self.state[2*i + 1]*4)
+
+        for i in xrange(self.num_goals):
+            self.goals[i].set_translation(self.state[2*self.num_agents + 2*i]*4, self.state[2*self.num_agents + 1 + 2*i]*4)
 
         return self.viewer.render(return_rgb_array = mode=='rgb_array')
